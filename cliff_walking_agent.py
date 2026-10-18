@@ -7,15 +7,15 @@ from gymnasium.wrappers import RecordVideo # official video method from gymnasiu
 
 class QLearningAgent: # agent class
     def __init__(self, states, actions, alpha = 0.1, gamma = 0.99,
-                 epsilon = 1.0, epsilon_decay = 0.995, min_epsilon = 0.01):
+                 epsilon = 1, epsilon_decay = 0.995, min_epsilon = 0.01):
         # initializing hyperparameters
         self.states = states
         self.actions = actions
-        self.alpha = alpha # (0.1, 0.5, 0.9)
-        self.gamma = gamma # (0.99, 0.90, 0.50)
-        self.epsilon = epsilon
-        self.min_epsilon = min_epsilon
-        self.decay_rate = epsilon_decay
+        self.alpha = alpha # 0.1 default, 0.0001, 0.5, 0.9
+        self.gamma = gamma # 0.99 default, 0.90, 0.50, 0.00001
+        self.epsilon = epsilon # 1.0 default
+        self.decay_rate = epsilon_decay # 0.995 default, 0.999, 0.99, 0.95 (best)
+        self.min_epsilon = min_epsilon  # 0.01 default
 
         # initializing q-table
         self.q_table = np.zeros((states, actions))
