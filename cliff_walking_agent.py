@@ -3,6 +3,7 @@
 import gymnasium as gym # for environment
 import numpy as np # for random actions and help plotting
 import matplotlib.pyplot as plt # for plotting eventual results
+from gymnasium.wrappers import RecordVideo # official video method from gymnasium website
 
 class QLearningAgent: # agent class
     def __init__(self, states, actions, alpha = 0.1, gamma = 0.99,
@@ -22,7 +23,7 @@ class QLearningAgent: # agent class
     def get_action(self, state, explore = True):
         # epsilon-greedy action-selection policy
         # explore = True is default
-        # will be set to false for video of "trained agent"
+        # will be set to false for video of "trained agent" and 30-episode evaluation
         if explore and (np.random.random() < self.epsilon):
             # explore
             return np.random.randint(self.actions)
@@ -59,7 +60,7 @@ def train(env, agent, episodes, learn = True):
         episode_reward = 0 # reset episode reward
 
         while not done: # loops for entire episode
-            action = agent.get_action(state, learn) # choose action
+            action = agent.get_action(state, learn) # choose action, only explores if not doing eval
             next_state, reward, terminated, truncated, _ = env.step(action) # perform action
             done = terminated or truncated
 
@@ -73,27 +74,44 @@ def train(env, agent, episodes, learn = True):
         agent.decay_epsilon()
         all_rewards.append(episode_reward) # compile list of rewards for later graphing
 
-    print("Training done.")
+    print('Training done.')
     return all_rewards
 
 def graph(rewards, moving_avg = True):
+    # moving average is separate here to ignore it when graphing the uninteresting 30-episode eval
     # plot baseline
     plt.plot(rewards, alpha = 0.3, label='Reward per Episode')
 
     # calculate moving average to smooth graph
     if moving_avg:
-        window = 10
+        window = 30
         moving_avg = np.convolve(rewards, np.ones(window) / window, mode = 'valid')
         plt.plot(range(window - 1, len(rewards)), moving_avg, label = f'{window}-Episode Moving Average')
 
-    plt.xlabel("Episode")
-    plt.ylabel("Total Reward")
-    plt.title("Q-Learning Training on Cliff Walking")
+    plt.xlabel('Episode')
+    plt.ylabel('Total Reward')
+    plt.title('Q-Learning Training on Cliff Walking')
     plt.legend()
     plt.show()
 
+def record_best_policy(agent):
+    # recording video
+    base_env = gym.make('CliffWalking-v1', render_mode='rgb_array')
+    video_env = RecordVideo(base_env, video_folder='./trained_video',
+                            episode_trigger=lambda x: True, disable_logger=True)
+    state, _ = video_env.reset()
+    done = False
+
+    while not done:
+        action = agent.get_action(state, explore=False)
+        state, _, terminated, truncated, _ = video_env.step(action)
+        done = terminated or truncated
+
+    video_env.close()
+    print('Video saved successfully.')
+
 if __name__ == "__main__":
-    environment = gym.make("CliffWalking-v1")
+    environment = gym.make('CliffWalking-v1')
     total_states = environment.observation_space.n
     total_actions = environment.action_space.n
     cliff_agent = QLearningAgent(states = total_states, actions = total_actions)
@@ -106,3 +124,4 @@ if __name__ == "__main__":
         graph(training_rewards, moving_avg = False)
 
     environment.close()
+    record_best_policy(cliff_agent)
